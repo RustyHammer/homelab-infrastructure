@@ -1,6 +1,6 @@
 # Homelab Infrastructure
 
-Mon cloud personnel heberge sur une ZimaBoard, gerant 7 services Docker auto-heberges avec monitoring, acces VPN et stockage 2 To.
+My personal cloud hosted on a ZimaBoard, running 7 self-hosted Docker services with monitoring, VPN access, and 2 TB storage.
 
 ---
 
@@ -8,10 +8,10 @@ Mon cloud personnel heberge sur une ZimaBoard, gerant 7 services Docker auto-heb
 
 ```mermaid
 graph TB
-    subgraph "Reseau local"
-        ZB["ZimaBoard<br/>Intel N150 | 16 Go RAM<br/>64 Go eMMC + 2 To HDD"]
+    subgraph "Local Network"
+        ZB["ZimaBoard<br/>Intel N150 | 16 GB RAM<br/>64 GB eMMC + 2 TB HDD"]
 
-        subgraph "Services Docker"
+        subgraph "Docker Services"
             IM[Immich<br/>Photos & Videos]
             NC[Nextcloud<br/>Cloud Storage]
             PH[Pi-hole<br/>DNS & Ad Blocker]
@@ -21,7 +21,7 @@ graph TB
         end
     end
 
-    subgraph "Acces distant"
+    subgraph "Remote Access"
         TS[Tailscale VPN]
         PHONE[Smartphone]
         LAPTOP[Laptop]
@@ -46,47 +46,47 @@ graph TB
 
 ## Hardware
 
-| Composant | Detail |
+| Component | Detail |
 |-----------|--------|
-| Carte | ZimaBoard (Intel N150) |
-| RAM | 16 Go |
-| Stockage systeme | 64 Go eMMC |
-| Stockage donnees | 2 To HDD |
+| Board | ZimaBoard (Intel N150) |
+| RAM | 16 GB |
+| System storage | 64 GB eMMC |
+| Data storage | 2 TB HDD |
 | OS | ZimaOS |
 
 ## Services
 
-### Stockage & Medias
+### Storage & Media
 
-| Service | Role | Port | Stockage |
-|---------|------|------|----------|
-| [Immich](https://immich.app/) | Sauvegarde automatique de photos/videos (alternative Google Photos) | 2283 | HDD 2 To |
-| [Nextcloud](https://nextcloud.com/) | Cloud personnel (fichiers, calendrier, contacts) | 443 | HDD 2 To |
+| Service | Role | Port | Storage |
+|---------|------|------|---------|
+| [Immich](https://immich.app/) | Automatic photo/video backup (Google Photos alternative) | 2283 | 2 TB HDD |
+| [Nextcloud](https://nextcloud.com/) | Personal cloud (files, calendar, contacts) | 443 | 2 TB HDD |
 
-### Securite & Reseau
+### Security & Network
 
 | Service | Role | Port |
 |---------|------|------|
-| [Pi-hole](https://pi-hole.net/) | DNS sinkhole - bloque les pubs et trackers au niveau reseau | 53, 80 |
-| [Tailscale](https://tailscale.com/) | VPN mesh - acces securise aux services depuis l'exterieur | - |
-| [Vaultwarden](https://github.com/dani-garcia/vaultwarden) | Gestionnaire de mots de passe auto-heberge (compatible Bitwarden) | 8080 |
+| [Pi-hole](https://pi-hole.net/) | DNS sinkhole - blocks ads and trackers at the network level | 53, 80 |
+| [Tailscale](https://tailscale.com/) | Mesh VPN - secure remote access to services from outside | - |
+| [Vaultwarden](https://github.com/dani-garcia/vaultwarden) | Self-hosted password manager (Bitwarden-compatible) | 8080 |
 
 ### Monitoring
 
 | Service | Role | Port |
 |---------|------|------|
-| [Prometheus](https://prometheus.io/) | Collecte de metriques systeme et services | 9090 |
-| [Grafana](https://grafana.com/) | Visualisation des metriques et dashboards | 3000 |
+| [Prometheus](https://prometheus.io/) | System and service metrics collection | 9090 |
+| [Grafana](https://grafana.com/) | Metrics visualization and dashboards | 3000 |
 
-## Reseau & Acces distant
+## Network & Remote Access
 
 ```mermaid
 graph LR
-    subgraph "Reseau domestique 192.168.x.0/24"
-        ROUTER[Box Internet]
+    subgraph "Home Network 192.168.x.0/24"
+        ROUTER[Internet Gateway]
         ZB[ZimaBoard]
         PC[PC]
-        DEVICES[Autres appareils]
+        DEVICES[Other devices]
 
         ROUTER --> ZB
         ROUTER --> PC
@@ -103,78 +103,78 @@ graph LR
     style PH fill:#96000f,color:#fff
 ```
 
-### Pourquoi Tailscale et pas un reverse proxy ?
+### Why Tailscale and not a reverse proxy?
 
-- **Pas de port ouvert sur la box** : Tailscale utilise un tunnel chiffre WireGuard qui ne necessite pas d'ouvrir de port sur le routeur. Zero surface d'attaque depuis Internet.
-- **Pas de domaine public necessaire** : Les services restent accessibles via des IPs privees Tailscale (100.x.x.x). Pas besoin de gerer des certificats SSL ou du DNS dynamique.
-- **Simplicite** : Un seul service a configurer au lieu de Nginx/Traefik + Certbot + DynDNS.
-- **Cas d'usage principal** : Acces a Immich depuis le telephone en mobilite pour la sauvegarde automatique des photos.
+- **No open port on the router**: Tailscale uses an encrypted WireGuard tunnel that does not require opening any port on the router. Zero attack surface from the Internet.
+- **No public domain needed**: Services remain accessible via private Tailscale IPs (100.x.x.x). No need to manage SSL certificates or dynamic DNS.
+- **Simplicity**: A single service to configure instead of Nginx/Traefik + Certbot + DynDNS.
+- **Primary use case**: Access Immich from a phone on the go for automatic photo backup.
 
-## Stack Monitoring (Prometheus + Grafana)
+## Monitoring Stack (Prometheus + Grafana)
 
-Le monitoring est critique meme sur un homelab. Si le disque de 2 To se remplit sans prevenir, on perd les sauvegardes photos.
+Monitoring is critical even on a homelab. If the 2 TB disk fills up without warning, photo backups are lost.
 
-### Ce que je monitore
+### What I Monitor
 
-- **Metriques systeme** : CPU, RAM, disque, temperature (via `node_exporter`)
-- **Docker** : Etat des containers, utilisation memoire/CPU par container (via `cAdvisor`)
-- **Pi-hole** : Nombre de requetes, pourcentage de blocage, domaines les plus demandes
-- **Stockage** : Espace utilise/restant sur le HDD de 2 To
+- **System metrics**: CPU, RAM, disk, temperature (via `node_exporter`)
+- **Docker**: Container status, memory/CPU usage per container (via `cAdvisor`)
+- **Pi-hole**: Number of queries, block percentage, most queried domains
+- **Storage**: Used/remaining space on the 2 TB HDD
 
-### Dashboard Grafana
+### Grafana Dashboard
 
-> *Captures d'ecran a venir*
+> *Screenshots coming soon*
 
-## Decisions techniques
+## Technical Decisions
 
-### Pourquoi auto-heberger ?
+### Why Self-Host?
 
-| Service | Alternative cloud | Raison de l'auto-hebergement |
-|---------|-------------------|------------------------------|
-| Immich | Google Photos | Controle total sur les donnees personnelles, pas de limite de stockage |
-| Nextcloud | Google Drive | Souverainete des donnees, pas d'abonnement mensuel |
-| Vaultwarden | Bitwarden cloud | Donnees sensibles restent chez moi |
-| Pi-hole | - | Bloque les pubs sur tout le reseau, pas juste le navigateur |
+| Service | Cloud Alternative | Reason for Self-Hosting |
+|---------|-------------------|-------------------------|
+| Immich | Google Photos | Full control over personal data, no storage limit |
+| Nextcloud | Google Drive | Data sovereignty, no monthly subscription |
+| Vaultwarden | Bitwarden cloud | Sensitive data stays at home |
+| Pi-hole | - | Blocks ads across the entire network, not just the browser |
 
-### Pourquoi ZimaBoard ?
+### Why ZimaBoard?
 
-- **Faible consommation** : ~6W en idle vs ~50W pour un PC standard. Tourne 24/7 pour moins de 15 EUR/an d'electricite.
-- **Silencieux** : Fanless possible selon la charge.
-- **Format compact** : Tient dans un placard reseau.
-- **x86** : Compatible avec tous les containers Docker (pas de problemes ARM comme le Raspberry Pi).
+- **Low power consumption**: ~6W idle vs ~50W for a standard PC. Runs 24/7 for less than 15 EUR/year in electricity.
+- **Silent**: Fanless operation possible depending on load.
+- **Compact form factor**: Fits in a network closet.
+- **x86**: Compatible with all Docker containers (no ARM issues like with Raspberry Pi).
 
-### Organisation du stockage
+### Storage Layout
 
 ```
-eMMC 64 Go (systeme)
+eMMC 64 GB (system)
 ├── ZimaOS
 ├── Docker images & containers
 └── Configurations
 
-HDD 2 To (donnees)
-├── immich/       # Photos et videos
-├── nextcloud/    # Fichiers cloud
-├── prometheus/   # Metriques (retention 30j)
+HDD 2 TB (data)
+├── immich/       # Photos and videos
+├── nextcloud/    # Cloud files
+├── prometheus/   # Metrics (30-day retention)
 └── grafana/      # Dashboards
 ```
 
-## Ce que j'ai appris
+## What I Learned
 
-- Deployer et gerer des services Docker en production (pas juste en exercice)
-- Configurer un stack de monitoring Prometheus + Grafana from scratch
-- Mettre en place un VPN mesh avec Tailscale pour l'acces distant securise
-- Gerer le DNS reseau avec Pi-hole (comprendre les requetes DNS, le blocage, le cache)
-- Auto-heberger un gestionnaire de mots de passe (sensibilite securite)
-- Gerer le stockage et anticiper les problemes de capacite
-- Maintenir des services 24/7 (mises a jour, sauvegardes, monitoring)
+- Deploy and manage Docker services in production (not just as exercises)
+- Set up a Prometheus + Grafana monitoring stack from scratch
+- Implement a mesh VPN with Tailscale for secure remote access
+- Manage network DNS with Pi-hole (understanding DNS queries, blocking, caching)
+- Self-host a password manager (security awareness)
+- Manage storage and anticipate capacity issues
+- Maintain 24/7 services (updates, backups, monitoring)
 
-## Ameliorations prevues
+## Planned Improvements
 
-- [ ] Configurer des alertes Grafana (notification si disque > 80%, container down, etc.)
-- [ ] Mettre en place des sauvegardes automatiques vers un second disque ou du stockage distant
-- [ ] Ajouter un reverse proxy (Traefik) avec certificats HTTPS locaux
-- [ ] Documenter les docker-compose de chaque service dans ce repo
+- [ ] Configure Grafana alerts (notification if disk > 80%, container down, etc.)
+- [ ] Set up automatic backups to a second disk or remote storage
+- [ ] Add a reverse proxy (Traefik) with local HTTPS certificates
+- [ ] Document the docker-compose files for each service in this repo
 
 ## Credits
 
-Infrastructure personnelle montee et maintenue par mes soins. Les logiciels utilises sont tous open-source.
+Personal infrastructure built and maintained by myself. All software used is open-source.

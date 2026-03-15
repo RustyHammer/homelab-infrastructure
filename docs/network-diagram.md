@@ -1,15 +1,15 @@
-# Schema reseau
+# Network Diagram
 
-## Vue d'ensemble
+## Overview
 
 ```mermaid
 graph TB
     subgraph "Internet"
-        ISP[FAI / Box Internet]
+        ISP[ISP / Internet Gateway]
     end
 
-    subgraph "Reseau domestique 192.168.x.0/24"
-        ROUTER[Routeur / Box]
+    subgraph "Home Network 192.168.x.0/24"
+        ROUTER[Router / Gateway]
 
         subgraph "ZimaBoard - 192.168.x.Y"
             PIHOLE["Pi-hole<br/>DNS :53"]
@@ -36,7 +36,7 @@ graph TB
     ISP --> ROUTER
     ROUTER -->|DHCP| PC
     ROUTER -->|DHCP| PHONE_LOCAL
-    ROUTER -->|IP fixe ou DHCP reserve| PIHOLE
+    ROUTER -->|Static IP or reserved DHCP| PIHOLE
 
     PC -->|DNS queries| PIHOLE
     PHONE_LOCAL -->|DNS queries| PIHOLE
@@ -46,29 +46,29 @@ graph TB
     TS_AGENT --> IMMICH
 ```
 
-## Configuration DNS avec Pi-hole
+## DNS Configuration with Pi-hole
 
-Tous les appareils du reseau utilisent Pi-hole comme serveur DNS :
+All devices on the network use Pi-hole as the DNS server:
 
-1. **Option 1** : Configurer le routeur pour distribuer l'IP de Pi-hole via DHCP
-2. **Option 2** : Configurer chaque appareil manuellement
+1. **Option 1**: Configure the router to distribute Pi-hole's IP via DHCP
+2. **Option 2**: Configure each device manually
 
 ```
-Requete DNS: "facebook.com"
-  → Pi-hole verifie sa blocklist
-  → Si bloque: retourne 0.0.0.0 (pub bloquee)
-  → Si OK: forward vers le DNS upstream (ex: Cloudflare 1.1.1.1)
+DNS request: "facebook.com"
+  → Pi-hole checks its blocklist
+  → If blocked: returns 0.0.0.0 (ad blocked)
+  → If OK: forwards to upstream DNS (e.g., Cloudflare 1.1.1.1)
 ```
 
-## Flux reseau Tailscale
+## Tailscale Network Flow
 
 ```
 Smartphone (4G)
   → Tailscale client
-  → Tunnel WireGuard chiffre
-  → Tailscale relay (si pas de connexion directe)
+  → Encrypted WireGuard tunnel
+  → Tailscale relay (if no direct connection)
   → ZimaBoard Tailscale agent
-  → Service Docker (ex: Immich :2283)
+  → Docker service (e.g., Immich :2283)
 ```
 
-Pas de port ouvert sur le routeur. Tailscale utilise du NAT traversal pour etablir une connexion directe quand possible, sinon passe par un relay (DERP server).
+No open port on the router. Tailscale uses NAT traversal to establish a direct connection when possible, otherwise routes through a relay (DERP server).

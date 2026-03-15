@@ -1,99 +1,99 @@
-# Stack Monitoring : Prometheus + Grafana
+# Monitoring Stack: Prometheus + Grafana
 
 ## Architecture
 
 ```mermaid
 graph LR
-    NE[node_exporter :9100] -->|metriques systeme| P[Prometheus :9090]
-    CA[cAdvisor :8180] -->|metriques Docker| P
-    PH[Pi-hole API] -->|metriques DNS| P
-    P -->|stocke les metriques| P
+    NE[node_exporter :9100] -->|system metrics| P[Prometheus :9090]
+    CA[cAdvisor :8180] -->|Docker metrics| P
+    PH[Pi-hole API] -->|DNS metrics| P
+    P -->|stores metrics| P
     P -->|PromQL queries| G[Grafana :3000]
-    G -->|dashboards| USER[Navigateur]
+    G -->|dashboards| USER[Browser]
 ```
 
 ## Prometheus
 
-Prometheus scrape (collecte) les metriques de chaque exporter a intervalles reguliers et les stocke en local.
+Prometheus scrapes (collects) metrics from each exporter at regular intervals and stores them locally.
 
-### Configuration type (`prometheus.yml`)
+### Sample Configuration (`prometheus.yml`)
 
 ```yaml
 global:
-  scrape_interval: 15s        # Frequence de collecte
-  evaluation_interval: 15s    # Frequence d'evaluation des alertes
+  scrape_interval: 15s        # Collection frequency
+  evaluation_interval: 15s    # Alert evaluation frequency
 
 scrape_configs:
-  # Metriques systeme (CPU, RAM, disque, reseau)
+  # System metrics (CPU, RAM, disk, network)
   - job_name: 'node'
     static_configs:
       - targets: ['node_exporter:9100']
 
-  # Metriques Docker (containers)
+  # Docker metrics (containers)
   - job_name: 'cadvisor'
     static_configs:
       - targets: ['cadvisor:8080']
 
-  # Metriques Pi-hole
+  # Pi-hole metrics
   - job_name: 'pihole'
     static_configs:
       - targets: ['pihole-exporter:9617']
 
-  # Prometheus se monitore lui-meme
+  # Prometheus monitors itself
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 ```
 
-### Retention des donnees
+### Data Retention
 
 ```yaml
-# Dans la commande de lancement de Prometheus
---storage.tsdb.retention.time=30d    # Garder 30 jours de metriques
---storage.tsdb.retention.size=5GB    # Limiter a 5 Go max
+# In the Prometheus launch command
+--storage.tsdb.retention.time=30d    # Keep 30 days of metrics
+--storage.tsdb.retention.size=5GB    # Limit to 5 GB max
 ```
 
-Sur un HDD de 2 To, 5 Go pour le monitoring est negligeable mais ca evite que ca grossisse indefiniment.
+On a 2 TB HDD, 5 GB for monitoring is negligible, but it prevents it from growing indefinitely.
 
 ## Grafana
 
-Grafana se connecte a Prometheus comme data source et permet de creer des dashboards visuels.
+Grafana connects to Prometheus as a data source and allows creating visual dashboards.
 
-### Dashboards recommandes
+### Recommended Dashboards
 
-| Dashboard | ID Grafana | Usage |
+| Dashboard | Grafana ID | Usage |
 |-----------|-----------|-------|
-| Node Exporter Full | 1860 | Metriques systeme completes |
-| Docker monitoring | 893 | Etat des containers |
-| Pi-hole Exporter | 10176 | Stats DNS et blocage |
+| Node Exporter Full | 1860 | Complete system metrics |
+| Docker monitoring | 893 | Container status |
+| Pi-hole Exporter | 10176 | DNS and blocking stats |
 
-Pour importer : Grafana > Dashboards > Import > Entrer l'ID.
+To import: Grafana > Dashboards > Import > Enter the ID.
 
-## Requetes PromQL utiles
+## Useful PromQL Queries
 
 ```promql
-# Utilisation CPU (%)
+# CPU usage (%)
 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
 
-# RAM utilisee (%)
+# RAM used (%)
 (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100
 
-# Espace disque restant (Go)
+# Remaining disk space (GB)
 node_filesystem_avail_bytes{mountpoint="/mnt/data"} / 1024 / 1024 / 1024
 
-# Nombre de containers Docker actifs
+# Number of active Docker containers
 count(container_last_seen{name!=""})
 
-# Requetes DNS bloquees par Pi-hole (par minute)
+# DNS queries blocked by Pi-hole (per minute)
 rate(pihole_domains_being_blocked[5m])
 ```
 
-## Alertes (a configurer)
+## Alerts (to be configured)
 
-Exemples d'alertes utiles pour un homelab :
+Examples of useful alerts for a homelab:
 
 ```yaml
-# Dans Prometheus (alerting rules)
+# In Prometheus (alerting rules)
 groups:
   - name: homelab
     rules:
@@ -101,17 +101,17 @@ groups:
         expr: node_filesystem_avail_bytes{mountpoint="/mnt/data"} / node_filesystem_size_bytes{mountpoint="/mnt/data"} < 0.15
         for: 5m
         annotations:
-          summary: "Espace disque < 15% sur le HDD de donnees"
+          summary: "Disk space < 15% on the data HDD"
 
       - alert: ContainerDown
         expr: absent(container_last_seen{name="immich"})
         for: 2m
         annotations:
-          summary: "Container Immich down depuis 2 minutes"
+          summary: "Immich container down for 2 minutes"
 
       - alert: HighMemoryUsage
         expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.9
         for: 5m
         annotations:
-          summary: "RAM > 90% depuis 5 minutes"
+          summary: "RAM > 90% for 5 minutes"
 ```
